@@ -22,11 +22,10 @@ def mkdir():
 def xml2csv(filename, is_one_file=False, dist_file=''):
     with open(filename) as f:
         try:
-            soup = BeautifulSoup(f)
+            soup = BeautifulSoup(f,'html5lib')
         except UnicodeDecodeError:
             return
     headers = soup.find_all('header')
-    mkdir()
     if not is_one_file:
         fout = open(os.path.join(CSV_DIR, filename.replace('xml','csv')),'wt')
     else:
@@ -64,9 +63,13 @@ def divide_by_years(filename, dist, first_year='96', second_year='97'):
         elif line[4].startswith(second_year):
             syear.writerow(line)
 
-def traverse_dirs(is_one_file=True, starts='frm'):
+def traverse_dirs(is_one_file=True, starts='frm', skip=False):
+    mkdir()
     for dirs in os.listdir():
         if not (dirs.startswith(starts) and os.path.isdir(dirs)):continue
+        dist = 'only_header_{dist}.csv'.format(dist=dirs)
+        if skip and os.path.exists(os.path.join(CSV_DIR,dist)):continue
+        print(dirs)
         for f in os.listdir(dirs):
             if 'xml' in f:
                 xml2csv(os.path.join(dirs,f), is_one_file, dirs)
@@ -94,12 +97,18 @@ if __name__ == '__main__':
                 python cleaner.py traverse
             or 
                 python cleaner.py -t
+            and if you wanna skip files you wrote already add -s
+                python cleaner.py -t -s
              """)
         exit()
     print("triming data.\nwait a moment...")
     if sys.argv[1] == 'traverse' or sys.argv[1] =='-t':
+        try:
+            skip = True if sys.argv[2] == '-s' else False
+        except IndexError:
+            skip = False
         print("traverse dirs...")
-        traverse_dirs()
+        traverse_dirs(skip=skip)
         exit()
     if sys.argv[1] == 'one_file':
         is_one_file = True
